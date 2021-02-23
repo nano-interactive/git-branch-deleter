@@ -1,6 +1,6 @@
 use chrono::naive::NaiveDateTime;
 use chrono::Duration;
-use git2::{Branch, BranchType, Commit, Error, Repository};
+use git2::{Branch, BranchType, Commit, Error, PushOptions, Repository};
 use std::{cmp::Ordering, str::FromStr};
 
 pub struct GitBranch<'a> {
@@ -14,7 +14,29 @@ pub struct GitBranch<'a> {
 
 impl<'a> GitBranch<'a> {
     pub fn delete(&mut self) -> Result<(), Error> {
-        self.branch.delete()
+        self.branch.delete()?;
+
+        if self.branch_type == BranchType::Remote {
+            // TODO: Optimize
+            let remotes = self
+                .repo
+                .remotes()?
+                .into_iter()
+                .filter(|rs| rs.is_some())
+                .map(|rs| rs.unwrap().to_string())
+                .collect::<Vec<_>>();
+
+            for remote in remotes {
+                let remote = self.repo.remote(&remote, "")?;
+                let mut options = PushOptions::default();
+                // options.
+                remote.push(&[], Some(&mut options));
+            }
+
+            // TODO: Remove remote branch in the remote location
+        }
+
+        Ok(())
     }
 
     pub fn get_name(&self) -> &str {
@@ -26,7 +48,7 @@ impl<'a> GitBranch<'a> {
     }
 
     pub fn get_commit_message(&self) -> &str {
-        self.message.as_str()
+        &self.message
     }
 }
 
