@@ -1,5 +1,5 @@
 [package]
-name = "git-delete-branches"
+name = "git-branch-deleter"
 version = "0.1.0"
 authors = ["Dusan Malusev <malusevd99@gmail.com>"]
 edition = "2018"

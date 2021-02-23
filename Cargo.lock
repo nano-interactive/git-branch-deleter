@@ -111,7 +111,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "git-delete-branches"
+name = "git-branch-deleter"
 version = "0.1.0"
 dependencies = [
  "chrono",
