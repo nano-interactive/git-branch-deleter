@@ -1,7 +1,7 @@
 use chrono::naive::NaiveDateTime;
 use chrono::Duration;
-use git2::{Branch, BranchType, Commit, Error, PushOptions, Repository};
-use std::{cmp::Ordering, str::FromStr};
+use git2::{Branch, BranchType, Commit, Cred, Error, PushOptions, Repository};
+use std::{cmp::Ordering, path::Path, str::FromStr};
 
 pub struct GitBranch<'a> {
     name: String,
@@ -13,30 +13,56 @@ pub struct GitBranch<'a> {
 }
 
 impl<'a> GitBranch<'a> {
-    pub fn delete(&mut self) -> Result<(), Error> {
-        self.branch.delete()?;
+    pub fn delete(&mut self, private_key: &str) -> Result<(), Error> {
+        // TODO: Uncomment this line when remote branch removal
+        // self.branch.delete()?;
 
         if self.branch_type == BranchType::Remote {
-            // TODO: Optimize
-            let remotes = self
-                .repo
-                .remotes()?
+            let remotes = self.repo.remotes()?;
+
+            let remotes = remotes
                 .into_iter()
                 .filter(|rs| rs.is_some())
-                .map(|rs| rs.unwrap().to_string())
+                .map(|rs| rs.unwrap())
                 .collect::<Vec<_>>();
 
-            for remote in remotes {
-                let remote = self.repo.remote(&remote, "")?;
-                let mut options = PushOptions::default();
-                // options.
-                remote.push(&[], Some(&mut options));
-            }
+            for name in remotes {
+                let mut remote = self.repo.find_remote(name)?;
 
-            // TODO: Remove remote branch in the remote location
+                let mut remote_callbacks = git2::RemoteCallbacks::new();
+
+                remote_callbacks.credentials(|_, username, types| {
+                    let username = username.unwrap_or("git");
+
+                    if types.is_ssh_key() || types.is_ssh_memory() {
+                        let private_key = Path::new(&private_key);
+                        Cred::ssh_key(username, None, private_key, None)
+                    } else if types.is_username() {
+                        Cred::username(username)
+                    } else {
+                        Err(Error::from_str("No credentials found"))
+                    }
+                });
+
+                let mut options = PushOptions::default();
+
+                options.remote_callbacks(remote_callbacks);
+
+                // TODO: Check how to delete remote branch
+                remote.push(&[format!("+:/refs/head/{}", name)], Some(&mut options))?;
+            }
         }
 
         Ok(())
+    }
+
+    pub fn get_filter(t: &str) -> Result<Option<BranchType>, Error> {
+        match t {
+            "remote" => Ok(Some(BranchType::Remote)),
+            "local" => Ok(Some(BranchType::Local)),
+            "both" => Ok(None),
+            _ => Err(Error::from_str("Invalid branch filter")),
+        }
     }
 
     pub fn get_name(&self) -> &str {
@@ -108,15 +134,6 @@ pub fn get_git_repo(path: Option<&str>) -> Result<Repository, Error> {
     match path {
         Some(p) => Repository::open(p),
         None => Repository::open_from_env(),
-    }
-}
-
-pub fn get_branch_filter(t: &str) -> Result<Option<BranchType>, Error> {
-    match t {
-        "remote" => Ok(Some(BranchType::Remote)),
-        "local" => Ok(Some(BranchType::Local)),
-        "both" => Ok(None),
-        _ => Err(Error::from_str("Invalid branch filter")),
     }
 }
 
