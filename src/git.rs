@@ -1,6 +1,6 @@
 use chrono::naive::NaiveDateTime;
 use chrono::Duration;
-use git2::{Branch, BranchType, Commit, Cred, Error, PushOptions, Repository};
+use git2::{Branch, BranchType, Commit, Cred, Error, PushOptions, Remote, Repository};
 use std::{cmp::Ordering, path::Path, str::FromStr};
 
 pub struct GitBranch<'a> {
@@ -13,44 +13,47 @@ pub struct GitBranch<'a> {
 }
 
 impl<'a> GitBranch<'a> {
+    fn find_remote(
+        &self,
+        origin_name: &str,
+        private_key: &'a str,
+    ) -> Result<(Remote<'a>, PushOptions), Error> {
+        let remote = self.repo.find_remote(origin_name)?;
+        let mut remote_callbacks = git2::RemoteCallbacks::new();
+        let mut options = PushOptions::default();
+
+        remote_callbacks.credentials(move |_, username, types| {
+            let username = username.unwrap_or("git");
+
+            if types.is_ssh_key() || types.is_ssh_memory() {
+                let private_key = Path::new(&private_key);
+                Cred::ssh_key(username, None, private_key, None)
+            } else if types.is_username() {
+                Cred::username(username)
+            } else {
+                Err(Error::from_str("No credentials found"))
+            }
+        });
+
+        options.remote_callbacks(remote_callbacks);
+
+        Ok((remote, options))
+    }
+
     pub fn delete(&mut self, private_key: &str) -> Result<(), Error> {
-        // TODO: Uncomment this line when remote branch removal
-        // self.branch.delete()?;
+        self.branch.delete()?;
 
         if self.branch_type == BranchType::Remote {
-            let remotes = self.repo.remotes()?;
+            let origin_name = self.name.split('/');
 
-            let remotes = remotes
-                .into_iter()
-                .filter(|rs| rs.is_some())
-                .map(|rs| rs.unwrap())
-                .collect::<Vec<_>>();
+            let origin_name = origin_name.collect::<Vec<&str>>();
 
-            for name in remotes {
-                let mut remote = self.repo.find_remote(name)?;
+            let (mut remote, mut options) = self.find_remote(origin_name[0], private_key)?;
 
-                let mut remote_callbacks = git2::RemoteCallbacks::new();
-
-                remote_callbacks.credentials(|_, username, types| {
-                    let username = username.unwrap_or("git");
-
-                    if types.is_ssh_key() || types.is_ssh_memory() {
-                        let private_key = Path::new(&private_key);
-                        Cred::ssh_key(username, None, private_key, None)
-                    } else if types.is_username() {
-                        Cred::username(username)
-                    } else {
-                        Err(Error::from_str("No credentials found"))
-                    }
-                });
-
-                let mut options = PushOptions::default();
-
-                options.remote_callbacks(remote_callbacks);
-
-                // TODO: Check how to delete remote branch
-                remote.push(&[format!("+:/refs/head/{}", name)], Some(&mut options))?;
-            }
+            remote.push(
+                &[format!("+:refs/heads/{}", origin_name[1])],
+                Some(&mut options),
+            )?
         }
 
         Ok(())

@@ -4,7 +4,7 @@ mod git;
 use args::{branch_type, path_to_repository, skip_branch_arg};
 use clap::App;
 use crossterm::style::Colorize;
-use git::{GitBranch, get_branches, get_git_repo};
+use git::{get_branches, get_git_repo, GitBranch};
 use git2::Error as GitError;
 use std::io::{stdin, stdout, Read, Result, Stdin, Stdout, Write};
 use std::{fs::read_dir, path::Path};
@@ -20,19 +20,20 @@ enum BranchAction {
     Delete,
 }
 
-fn get_action(input: &mut Stdin) -> Result<Option<BranchAction>> {
+fn get_action(out: &mut Stdout, input: &mut Stdin) -> Result<Option<BranchAction>> {
     input.lock();
-    let enter_key = char::from(13);
-    let mut buf: [u8; 1] = [0; 1];
+    let mut buf: [u8; 2] = [0; 2];
 
     // input.
+    write!(out, "Action: ")?;
+    out.flush()?;
     input.read(&mut buf)?;
 
     let action = match char::from(buf[0].to_ascii_lowercase()) {
         'd' => Some(BranchAction::Delete),
         'k' => Some(BranchAction::Keep),
         's' => Some(BranchAction::Show),
-        c if c == enter_key => Some(BranchAction::Keep),
+        // c if c == enter_key => Some(BranchAction::Keep),
         _ => None,
     };
 
@@ -110,9 +111,11 @@ fn main() -> std::result::Result<(), GitError> {
         print_git_branch_info(&mut stdout, &b);
 
         loop {
-            let action = get_action(&mut stdin);
+            let action = get_action(&mut stdout, &mut stdin);
             match action {
-                Ok(None) => {}
+                Ok(None) => {
+                    eprintln!("Invalid action, please check again");
+                }
                 Ok(Some(action)) => match action {
                     BranchAction::Delete => {
                         let keys = &keys;
@@ -123,7 +126,7 @@ fn main() -> std::result::Result<(), GitError> {
                                 Err(err) => {
                                     eprintln!("{}", err);
                                     None
-                                },
+                                }
                             })
                             .any(|k| k.is_some());
 
