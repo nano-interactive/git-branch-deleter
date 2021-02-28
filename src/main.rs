@@ -70,15 +70,15 @@ fn do_action_on_branch<'a>(
         match action {
             BranchAction::Delete => match delete_branch(repo, &mut branch, keys) {
                 Ok(_) => {
-                    println!(
-                        "Branch {} was successfully deleted.",
+                    print!(
+                        "Branch {} was successfully deleted.\n\n",
                         branch.get_name().blue()
                     );
                     break;
                 }
                 Err(err) => {
                     println!(
-                        "Error while deleting branch {}: {}",
+                        "Error while deleting branch {}: {}\n\n",
                         branch.get_name().red(),
                         err
                     );

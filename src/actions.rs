@@ -36,7 +36,7 @@ impl From<u8> for BranchAction {
 }
 
 pub fn get_action<R: Read, W: Write>(out: &mut W, input: &mut R) -> Result<BranchAction> {
-    let action = "Action".green();
+    let action = "Action: ".green();
     let mut buf: [u8; 3] = [0; 3];
     write!(out, "{}", action)?;
 
