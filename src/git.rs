@@ -1,24 +1,67 @@
 use chrono::naive::NaiveDateTime;
 use chrono::Duration;
-use git2::{Branch, BranchType, Commit, Cred, Error, PushOptions, Remote, Repository};
+use git2::{
+    Branch, BranchType as GitBranchType, Commit, Cred, Error, PushOptions, Remote, Repository,
+};
 use std::{cmp::Ordering, path::Path, str::FromStr};
 
+/// Wrapper for Git Branch type
+/// Encapsulates branch name, last commit time, last commit message
+/// and branch type (remote or local)
 pub struct GitBranch<'a> {
     name: String,
     message: String,
     commit_time: NaiveDateTime,
     branch: Branch<'a>,
-    repo: &'a Repository,
     branch_type: BranchType,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub enum BranchType {
+    Remote,
+    Local,
+    Both,
+    Invalid,
+}
+
+impl From<&str> for BranchType {
+    fn from(t: &str) -> Self {
+        match t {
+            "remote" => Self::Remote,
+            "local" => Self::Local,
+            "both" => Self::Both,
+            _ => Self::Invalid,
+        }
+    }
+}
+
+impl From<GitBranchType> for BranchType {
+    fn from(t: GitBranchType) -> Self {
+        match t {
+            GitBranchType::Remote => Self::Remote,
+            GitBranchType::Local => Self::Local,
+        }
+    }
+}
+
+impl Into<Option<GitBranchType>> for BranchType {
+    fn into(self) -> Option<GitBranchType> {
+        match self {
+            BranchType::Remote => Some(GitBranchType::Remote),
+            BranchType::Local => Some(GitBranchType::Local),
+            _ => None,
+        }
+    }
 }
 
 impl<'a> GitBranch<'a> {
     fn find_remote(
         &self,
+        repo: &'a Repository,
         origin_name: &str,
         private_key: &'a str,
     ) -> Result<(Remote<'a>, PushOptions), Error> {
-        let remote = self.repo.find_remote(origin_name)?;
+        let remote = repo.find_remote(origin_name)?;
         let mut remote_callbacks = git2::RemoteCallbacks::new();
         let mut options = PushOptions::default();
 
@@ -40,7 +83,9 @@ impl<'a> GitBranch<'a> {
         Ok((remote, options))
     }
 
-    pub fn delete(&mut self, private_key: &str) -> Result<(), Error> {
+    /// Delete the branch from the repository, if the branch is ```remote```, it will
+    /// be removed from all remote originis if the credentials allow
+    pub fn delete(&mut self, repo: &'a Repository, private_key: &str) -> Result<(), Error> {
         self.branch.delete()?;
 
         if self.branch_type == BranchType::Remote {
@@ -48,7 +93,7 @@ impl<'a> GitBranch<'a> {
 
             let origin_name = origin_name.collect::<Vec<&str>>();
 
-            let (mut remote, mut options) = self.find_remote(origin_name[0], private_key)?;
+            let (mut remote, mut options) = self.find_remote(repo, origin_name[0], private_key)?;
 
             remote.push(
                 &[format!("+:refs/heads/{}", origin_name[1])],
@@ -57,15 +102,6 @@ impl<'a> GitBranch<'a> {
         }
 
         Ok(())
-    }
-
-    pub fn get_filter(t: &str) -> Result<Option<BranchType>, Error> {
-        match t {
-            "remote" => Ok(Some(BranchType::Remote)),
-            "local" => Ok(Some(BranchType::Local)),
-            "both" => Ok(None),
-            _ => Err(Error::from_str("Invalid branch filter")),
-        }
     }
 
     pub fn get_name(&self) -> &str {
@@ -145,11 +181,11 @@ pub fn get_git_repo(path: Option<&str>) -> Result<Repository, Error> {
 /// it ignores ones with errors
 pub fn get_branches<'a>(
     repo: &'a Repository,
-    filter: Option<BranchType>,
+    filter: BranchType,
     skip: &Vec<&str>,
 ) -> Result<Vec<GitBranch<'a>>, Error> {
     let mut branches = repo
-        .branches(filter)?
+        .branches(filter.into())?
         .into_iter()
         .filter_map(|branch| -> Option<GitBranch> {
             match branch {
@@ -164,8 +200,7 @@ pub fn get_branches<'a>(
                             commit_time,
                             message: String::from_str(message.unwrap()).unwrap(),
                             branch,
-                            repo,
-                            branch_type,
+                            branch_type: BranchType::from(branch_type),
                         })
                     } else {
                         None
