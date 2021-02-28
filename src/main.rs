@@ -6,7 +6,7 @@ mod keys;
 use crate::actions::get_action;
 use crate::keys::get_public_and_private_key_paths;
 use actions::BranchAction;
-use args::{branch_type, path_to_repository, skip_branch_arg};
+use args::{branch_type, path_to_repository, skip_branch_arg, ssh_key_path};
 use clap::App;
 use crossterm::style::Colorize;
 use git::{get_branches, get_git_repo, BranchType, GitBranch};
@@ -23,10 +23,11 @@ const ACTIONS: &str = "k(eep)/d(elete)/s(how)/q(uit)";
 fn print_git_branch_info(stdout: &mut Stdout, branch: &GitBranch) {
     let _ = writeln!(
         stdout,
-        "Actions: {}\nBranch -> {}\nLast Commit -> {}",
+        "Actions: {}\nBranch -> {}\nLast Commit -> {}\nCommit Hash: {}",
         ACTIONS,
         branch.get_name().blue(),
-        branch.get_commit_time().to_string().yellow(),
+        branch.get_commit_time().format("%a %d %B %Y %T").to_string().yellow(),
+        branch.get_commit_id()[..10].green(),
     );
 }
 
@@ -87,7 +88,7 @@ fn do_action_on_branch<'a>(
             },
             BranchAction::Keep | BranchAction::Quit => break,
             BranchAction::Show => {
-                println!("Commit Message -> {}", branch.get_commit_message().green())
+                println!("Commit Hash -> {} | Commit Message -> {}", branch.get_commit_id(), branch.get_commit_message().green())
             }
             _ => {
                 eprintln!("{} action, valid actions are: {}", action, ACTIONS)
@@ -103,6 +104,7 @@ fn main() -> Result<(), GitError> {
         .version(VERSION)
         .arg(skip_branch_arg())
         .arg(path_to_repository())
+        .arg(ssh_key_path())
         .arg(branch_type())
         .get_matches();
 
@@ -111,13 +113,14 @@ fn main() -> Result<(), GitError> {
 
     let skip = matches.values_of("skip").unwrap().collect::<Vec<&str>>();
     let path = matches.value_of("path");
+    let ssh_key = matches.value_of("ssh_key");
     let branch_filter = BranchType::from(matches.value_of("filter").unwrap());
 
     if branch_filter == BranchType::Invalid {
         return Err(GitError::from_str("Invalid branch filter"));
     }
 
-    let keys = get_public_and_private_key_paths()?;
+    let keys = get_public_and_private_key_paths(ssh_key)?;
     let repo = get_git_repo(path)?;
     let branches = get_branches(&repo, branch_filter, &skip)?;
 
@@ -127,4 +130,3 @@ fn main() -> Result<(), GitError> {
 
     Ok(())
 }
-

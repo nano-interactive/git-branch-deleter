@@ -9,6 +9,7 @@ use std::{cmp::Ordering, path::Path, str::FromStr};
 /// Encapsulates branch name, last commit time, last commit message
 /// and branch type (remote or local)
 pub struct GitBranch<'a> {
+    commit_id: String,
     name: String,
     message: String,
     commit_time: NaiveDateTime,
@@ -115,6 +116,10 @@ impl<'a> GitBranch<'a> {
     pub fn get_commit_message(&self) -> &str {
         &self.message
     }
+
+    pub fn get_commit_id(&self) -> &str {
+        &self.commit_id
+    }
 }
 
 impl<'a> Eq for GitBranch<'a> {
@@ -145,6 +150,10 @@ fn extract_commit_time(commit: &Commit) -> NaiveDateTime {
     let offset = time.offset_minutes();
     let time = NaiveDateTime::from_timestamp(seconds, 0);
     time + Duration::minutes(offset as i64)
+}
+
+fn extract_commit_id(commit: &Commit) -> String {
+    commit.id().to_string()
 }
 
 fn extract_commit_message<'a>(commit: &'a Commit) -> Option<&'a str> {
@@ -194,10 +203,12 @@ pub fn get_branches<'a>(
                     let commit = branch.get().peel_to_commit().unwrap();
                     let commit_time = extract_commit_time(&commit);
                     let message = extract_commit_message(&commit);
+                    let commit_id = extract_commit_id(&commit);
                     if let Some(name) = name {
                         Some(GitBranch {
                             name,
                             commit_time,
+                            commit_id,
                             message: String::from_str(message.unwrap()).unwrap(),
                             branch,
                             branch_type: BranchType::from(branch_type),

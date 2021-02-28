@@ -5,6 +5,7 @@ pub fn path_to_repository<'a, 'b>() -> Arg<'a, 'b> {
         .short("p")
         .long("path")
         .number_of_values(1)
+        .env("GIT_BRANCH_DELETER_REPO_PATH")
         .aliases(&["repo", "repository", "project"])
         .help("Path to the repository")
         .required(false);
@@ -29,6 +30,7 @@ pub fn skip_branch_arg<'a, 'b>() -> Arg<'a, 'b> {
         .allow_hyphen_values(false)
         .multiple(true)
         .required(true)
+        .env("GIT_BRANCH_DELETER_SKIP_BRANCHES")
         .default_value("master")
         .help("Skip branches for removal")
 }
@@ -43,4 +45,16 @@ pub fn branch_type<'a, 'b>() -> Arg<'a, 'b> {
         .default_value("both")
         .possible_values(&["remote", "local", "both"])
         .help("Filters the branches from the repository")
+}
+
+pub fn ssh_key_path<'a, 'b>() -> Arg<'a, 'b> {
+    Arg::with_name("ssh_key")
+        .short("k")
+        .long("ssh-key")
+        .case_insensitive(false)
+        .allow_hyphen_values(true)
+        .help("Path to the SSH key used for authentication to remote git repository")
+        .required(false)
+        .env("GIT_BRANCH_DELETER_SSH_KEY")
+        .aliases(&["key", "ssh"])
 }

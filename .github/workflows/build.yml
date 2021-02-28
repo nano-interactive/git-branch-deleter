@@ -1,0 +1,48 @@
+name: 'Build'
+
+on:
+  push:
+    branches: [master]
+jobs:
+  ubuntu:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - uses: actions-rs/toolchain@v1
+      name: Setup Rust and Cargo
+      with:
+        toolchain: stable
+    - uses: actions-rs/cargo@v1
+    - name: Building Ubuntu Binary
+      with:
+        command: build
+        args: --release
+  macos:
+    runs-on: macos-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - uses: actions-rs/toolchain@v1
+      name: Setup Rust and Cargo
+      with:
+        toolchain: stable
+    - uses: actions-rs/cargo@v1
+    - name: Building Macos Binary
+      with:
+        command: build
+        args: --release
+  windows:
+    runs-on: windows-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - uses: actions-rs/toolchain@v1
+      name: Setup Rust and Cargo
+      with:
+        toolchain: stable
+    - uses: actions-rs/cargo@v1
+    - name: Building Windows Binary
+      with:
+        command: build
+        args: --release
