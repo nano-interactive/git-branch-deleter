@@ -4,7 +4,12 @@ use git2::Error;
 
 pub fn get_public_and_private_key_paths<'a>() -> Result<Vec<String>, Error> {
     // TODO: Improve SSH Support for different keys
+
+    #[cfg(target_os = "windows")]
+    let home = format!("{}{}", var("SYSTEMDRIVE").unwrap_or("C:".to_owned()), var("HOMEPATH").unwrap_or("\\Users\\System".to_owned()));
+    #[cfg(not(target_os = "windows"))]
     let home = var("HOME").unwrap_or("/root".to_owned());
+
     // TODO: Add CommandLine flag to ssh-key
     let ssh_key = var("GIT_DELETER_SSH").unwrap_or("".to_owned());
     let ssh_key_path = Path::new(&ssh_key);

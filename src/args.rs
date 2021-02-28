@@ -4,6 +4,7 @@ pub fn path_to_repository<'a, 'b>() -> Arg<'a, 'b> {
     let arg = Arg::with_name("path")
         .short("p")
         .long("path")
+        .number_of_values(1)
         .aliases(&["repo", "repository", "project"])
         .help("Path to the repository")
         .required(false);
