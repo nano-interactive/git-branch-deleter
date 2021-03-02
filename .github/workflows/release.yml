@@ -26,11 +26,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - uses: 'malusev998/git-branch-deleter/.github/action/release-upload/build-and-upload@master'
+      - uses: actions-rs/toolchain@v1
+        name: Setup Rust and Cargo
         with:
-          os: linux
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          version: ${{ github.ref }}
+          toolchain: stable
+      - uses: actions-rs/cargo@v1
+      - name: Building Macos Binary
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release
       - name: Upload Release Asset
         id: upload-release-asset
         uses: actions/upload-release-asset@v1
@@ -47,11 +52,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - uses: 'malusev998/git-branch-deleter/.github/action/release-upload/build-and-upload@master'
+      - uses: actions-rs/toolchain@v1
+        name: Setup Rust and Cargo
         with:
-          os: linux
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          version: ${{ github.ref }}
+          toolchain: stable
+      - uses: actions-rs/cargo@v1
+      - name: Building Ubuntu Binary
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release
       - name: Upload Release Asset
         id: upload-release-asset
         uses: actions/upload-release-asset@v1
@@ -68,11 +78,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - uses: 'malusev998/git-branch-deleter/.github/action/release-upload/build-and-upload@master'
+      - uses: actions-rs/toolchain@v1
+        name: Setup Rust and Cargo
         with:
-          os: windows
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          version: ${{ github.ref }}
+          toolchain: stable
+      - uses: actions-rs/cargo@v1
+      - name: Building Windows Binary
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release
       - name: Upload Release Asset
         id: upload-release-asset
         uses: actions/upload-release-asset@v1
@@ -80,6 +95,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ inputs.upload_url }}
-          asset_path: ./target/release/git-branch-deleter
+          asset_path: ./target/release/git-branch-deleter.exe
           asset_name: git-branch-deleter-windows-${{ github.ref }}.exe
           asset_content_type: application/octet-stream

@@ -15,6 +15,7 @@ jobs:
         toolchain: stable
     - uses: actions-rs/cargo@v1
     - name: Building Ubuntu Binary
+      uses: actions-rs/cargo@v1
       with:
         command: build
         args: --release
@@ -29,6 +30,7 @@ jobs:
         toolchain: stable
     - uses: actions-rs/cargo@v1
     - name: Building Macos Binary
+      uses: actions-rs/cargo@v1
       with:
         command: build
         args: --release
@@ -43,6 +45,7 @@ jobs:
         toolchain: stable
     - uses: actions-rs/cargo@v1
     - name: Building Windows Binary
+      uses: actions-rs/cargo@v1
       with:
         command: build
         args: --release
