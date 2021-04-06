@@ -32,6 +32,11 @@ jobs:
         name: Setup Rust and Cargo
         with:
           toolchain: stable
+      - uses: olegtarasov/get-tag@v2.1
+        id: git_tag
+        with:
+          tagRegex: "v(.*)"
+          tagRegexGroup: 1
       - uses: actions-rs/cargo@v1
       - name: Building Macos Binary
         uses: actions-rs/cargo@v1
@@ -46,7 +51,7 @@ jobs:
         with:
           upload_url: ${{ needs.release.outputs.upload_url }}
           asset_path: ./target/release/git-branch-deleter
-          asset_name: git-branch-deleter-macos-${{ github.ref }}
+          asset_name: git-branch-deleter-macos-${{ steps.git_tag.outputs.tag }}
           asset_content_type: application/octet-stream
   ubuntu:
     runs-on: ubuntu-latest
@@ -58,6 +63,11 @@ jobs:
         name: Setup Rust and Cargo
         with:
           toolchain: stable
+      - uses: olegtarasov/get-tag@v2.1
+        id: git_tag
+        with:
+          tagRegex: "v(.*)"
+          tagRegexGroup: 1
       - uses: actions-rs/cargo@v1
       - name: Building Ubuntu Binary
         uses: actions-rs/cargo@v1
@@ -72,7 +82,7 @@ jobs:
         with:
           upload_url: ${{ needs.release.outputs.upload_url }}
           asset_path: ./target/release/git-branch-deleter
-          asset_name: git-branch-deleter-ubuntu-${{ github.ref }}
+          asset_name: git-branch-deleter-ubuntu-${{ steps.git_tag.outputs.tag }}
           asset_content_type: application/octet-stream
   windows:
     runs-on: windows-latest
@@ -84,6 +94,11 @@ jobs:
         name: Setup Rust and Cargo
         with:
           toolchain: stable
+      - uses: olegtarasov/get-tag@v2.1
+        id: git_tag
+        with:
+          tagRegex: "v(.*)"
+          tagRegexGroup: 1
       - uses: actions-rs/cargo@v1
       - name: Building Windows Binary
         uses: actions-rs/cargo@v1
@@ -98,5 +113,5 @@ jobs:
         with:
           upload_url: ${{ needs.release.outputs.upload_url }}
           asset_path: ./target/release/git-branch-deleter.exe
-          asset_name: git-branch-deleter-windows-${{ github.ref }}.exe
+          asset_name: git-branch-deleter-windows-${{ steps.git_tag.outputs.tag }}.exe
           asset_content_type: application/octet-stream
