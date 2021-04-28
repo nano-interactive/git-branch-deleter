@@ -1,4 +1,5 @@
 use crossterm::style::Colorize;
+use rpassword::read_password;
 use std::fmt::Display;
 use std::io::{Read, Result, Write};
 
@@ -44,4 +45,15 @@ pub fn get_action<R: Read, W: Write>(out: &mut W, input: &mut R) -> Result<Branc
     input.read(&mut buf)?;
 
     Ok(BranchAction::from(buf[0].to_ascii_lowercase()))
+}
+
+pub fn get_ssh_key_passphrase<W: Write>(out: &mut W) -> Result<String> {
+    let passphrase = "SSH Passphrase: ".green();
+    write!(out, "{}", passphrase)?;
+
+    out.flush()?;
+
+    let password_result = read_password()?;
+
+    Ok(password_result)
 }
