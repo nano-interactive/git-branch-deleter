@@ -11,10 +11,10 @@ pub fn path_to_repository<'a, 'b>() -> Arg<'a, 'b> {
         .required(false);
 
     #[cfg(target_os = "windows")]
-        let arg = arg.case_insensitive(false);
+    let arg = arg.case_insensitive(false);
 
     #[cfg(not(target_os = "windows"))]
-        let arg = arg.case_insensitive(true);
+    let arg = arg.case_insensitive(true);
 
     arg
 }
@@ -59,7 +59,6 @@ pub fn ssh_key_path<'a, 'b>() -> Arg<'a, 'b> {
         .aliases(&["key", "ssh"])
 }
 
-
 pub fn ssh_key_passphrase<'a, 'b>() -> Arg<'a, 'b> {
     Arg::with_name("ssh_key_passphrase")
         .short("l")
@@ -69,6 +68,5 @@ pub fn ssh_key_passphrase<'a, 'b>() -> Arg<'a, 'b> {
         .allow_hyphen_values(true)
         .help("SSH Key passphrase")
         .required(false)
-        .default_value("")
         .env("GIT_BRANCH_DELETER_SSH_KEY_PASSPHRASE")
 }
