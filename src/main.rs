@@ -27,6 +27,12 @@ const ABOUT: &str = "Deletes old branches from the GIT repository";
 
 const ACTIONS: &str = "k(eep)/d(elete)/s(how)/q(uit)";
 
+#[derive(Debug, Eq, PartialEq)]
+enum Interrupt {
+    Quit,
+    Continue,
+}
+
 /// delete-branch function tries to remove branch from the repository
 /// Uses all ssh keys found in user's .ssh directory, and tries the one by one.
 /// If any of the succeed, operation is considered successful.
@@ -62,7 +68,7 @@ fn do_action_on_branch<'a>(
     mut branch: GitBranch<'a>,
     keys: &Vec<String>,
     passphrase: Option<&'a str>,
-) {
+) -> Interrupt {
     let _ = writeln!(
         stdout,
         "Actions: {}\nBranch -> {}\nLast Commit -> {}\nCommit Hash: {}",
@@ -94,7 +100,8 @@ fn do_action_on_branch<'a>(
                     break;
                 }
             },
-            BranchAction::Keep | BranchAction::Quit => break,
+            BranchAction::Keep => break,
+            BranchAction::Quit => return Interrupt::Quit,
             BranchAction::Show => {
                 println!(
                     "Commit Hash -> {} | Commit Message -> {}",
@@ -107,6 +114,8 @@ fn do_action_on_branch<'a>(
             }
         }
     }
+
+    Interrupt::Continue
 }
 
 fn main() -> Result<(), GitError> {
@@ -153,7 +162,11 @@ fn main() -> Result<(), GitError> {
             None => None,
         };
 
-        do_action_on_branch(&mut stdin, &mut stdout, &repo, branch, &keys, c.as_deref());
+        if Interrupt::Quit
+            == do_action_on_branch(&mut stdin, &mut stdout, &repo, branch, &keys, c.as_deref())
+        {
+            return Ok(());
+        }
     }
 
     Ok(())
